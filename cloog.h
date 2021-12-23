@@ -10,8 +10,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <thread>
-#include <time.h>
-#include <sys/time.h>
+#include <ctime>
+#include <chrono>
 #include <mutex>
 #include <condition_variable>
 
@@ -29,7 +29,8 @@ struct utc_timer
 {
     utc_timer()
     {
-        time_t now_sec = time(0);
+        auto tp = std::chrono::system_clock::now();
+        time_t now_sec = std::chrono::system_clock::to_time_t(tp);
         //set _sys_acc_sec, _sys_acc_min
         _sys_acc_sec = now_sec;
         _sys_acc_min = _sys_acc_sec / 60;
@@ -47,7 +48,8 @@ struct utc_timer
 
     uint64_t get_curr_time(int* p_msec = nullptr)
     {
-        time_t now_sec = time(0);
+        auto tp = std::chrono::system_clock::now();
+        time_t now_sec = std::chrono::system_clock::to_time_t(tp);
         if (p_msec)
             *p_msec = now_sec;
         //if not in same seconds
@@ -192,8 +194,8 @@ private:
 
     bool decis_file(int year, int mon, int day);
 
-    cloog(const cloog&);
-    const cloog& operator=(const cloog&);
+    cloog(const cloog&) = delete;
+    const cloog& operator=(const cloog&) = delete;
 
     int _buff_cnt;
 

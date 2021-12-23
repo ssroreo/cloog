@@ -9,7 +9,6 @@
 #include <assert.h>//assert
 #include <stdarg.h>//va_list
 #include <sys/stat.h>//mkdir
-#include <chrono>
 
 static uint64_t MEM_USE_LIMIT   = (3u * 1024 * 1024 * 1024);
 static uint64_t LOG_USE_LIMIT   = (1u * 1024 * 1024 * 1024);
@@ -138,7 +137,7 @@ void cloog::try_append(const char* lvl, const char* format, ...)
 
     char log_line[LOG_LEN_LIMIT];
     int prev_len = snprintf(log_line, LOG_LEN_LIMIT, "%s[%s.%03d]", lvl, _tm.utc_fmt, ms);
-
+    
     va_list arg_ptr;
     va_start(arg_ptr, format);
 
