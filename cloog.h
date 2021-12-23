@@ -255,8 +255,8 @@ do \
 { \
 if (cloog::ins()->get_level() >= TRACE) \
 { \
-cloog::ins()->try_append("[TRACE]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args); \
+cloog::ins()->try_append("[TRACE]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args); \
 } \
 } while (0)
 
@@ -265,8 +265,8 @@ do \
 { \
 if (cloog::ins()->get_level() >= DEBUG) \
 { \
-cloog::ins()->try_append("[DEBUG]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args); \
+cloog::ins()->try_append("[DEBUG]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args); \
 } \
 } while (0)
 
@@ -275,8 +275,8 @@ do \
 { \
 if (cloog::ins()->get_level() >= INFO) \
 { \
-cloog::ins()->try_append("[INFO]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args); \
+cloog::ins()->try_append("[INFO]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args); \
 } \
 } while (0)
 
@@ -285,8 +285,8 @@ do \
 { \
 if (cloog::ins()->get_level() >= INFO) \
 { \
-cloog::ins()->try_append("[INFO]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args); \
+cloog::ins()->try_append("[INFO]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args); \
 } \
 } while (0)
 
@@ -295,8 +295,8 @@ do \
 { \
 if (cloog::ins()->get_level() >= WARN) \
 { \
-cloog::ins()->try_append("[WARN]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args); \
+cloog::ins()->try_append("[WARN]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args); \
 } \
 } while (0)
 
@@ -305,16 +305,16 @@ do \
 { \
 if (cloog::ins()->get_level() >= ERROR) \
 { \
-cloog::ins()->try_append("[ERROR]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args);            \
+cloog::ins()->try_append("[ERROR]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args);            \
 } \
 } while (0)
 
 #define LOG_FATAL(fmt, args...) \
 do \
 { \
-cloog::ins()->try_append("[FATAL]", "[%u]%s:%d(%s): " fmt "\n", \
-std::this_thread::get_id(), __FILE__, __LINE__, __FUNCTION__, ##args); \
+cloog::ins()->try_append("[FATAL]", "[%u]: " fmt "\n", \
+std::this_thread::get_id(), ##args); \
 } while (0)
 
 #endif //CLOOG_CLOOG_H
