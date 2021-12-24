@@ -135,6 +135,7 @@ void cloog::try_append(const char* lvl, const char* format, ...)
     if (_lst_lts && curr_sec - _lst_lts < RELOG_THRESOLD)
         return ;
 
+    ms %= 1000;
     char log_line[LOG_LEN_LIMIT];
     int prev_len = snprintf(log_line, LOG_LEN_LIMIT, "%s[%s.%03d]", lvl, _tm.utc_fmt, ms);
 
