@@ -10,10 +10,10 @@
 #include <stdarg.h>//va_list
 #include <sys/stat.h>//mkdir
 
-static uint64_t MEM_USE_LIMIT   = (3u * 1024 * 1024 * 1024);
-static uint64_t LOG_USE_LIMIT   = (1u * 1024 * 1024 * 1024);
-static uint64_t LOG_LEN_LIMIT   = (4 * 1024);
-static uint64_t RELOG_THRESOLD  = 5;
+static uint64_t MEM_USE_LIMIT    = (3u * 1024 * 1024 * 1024);
+static uint64_t LOG_FILE_LIMIT   = (1u * 1024 * 1024 * 1024);
+static uint64_t LOG_LEN_LIMIT    = (4 * 1024);
+static uint64_t RELOG_THRESOLD   = 5;
 
 std::mutex cloog::_mutex;
 std::mutex cloog::_cond_mutex;
@@ -238,7 +238,7 @@ bool cloog::decis_file(int year, int mon, int day)
         if (_fp)
             _log_cnt = 1;
     }
-    else if (ftell(_fp) >= LOG_USE_LIMIT)
+    else if (ftell(_fp) >= LOG_FILE_LIMIT)
     {
         fclose(_fp);
         char old_path[1024] = {};
@@ -264,4 +264,16 @@ bool cloog::decis_file(int year, int mon, int day)
 void cloog::be_thdo()
 {
     cloog::ins()->persist();
+}
+
+void cloog::set_max_mem(const uint64_t max_mem)
+{
+    std::lock_guard<std::mutex>lock(_mutex);
+    MEM_USE_LIMIT = max_mem;
+}
+
+void cloog::set_max_filesize(const uint64_t max_filesize)
+{
+    std::lock_guard<std::mutex>lock(_mutex);
+    LOG_FILE_LIMIT = max_filesize;
 }

@@ -15,6 +15,26 @@
 #include <mutex>
 #include <condition_variable>
 
+#define RESET   "\033[0m"
+#define BLACK   "\033[30m"      /* Black */
+#define RED     "\033[31m"      /* Red */
+#define GREEN   "\033[32m"      /* Green */
+#define YELLOW  "\033[33m"      /* Yellow */
+#define BLUE    "\033[34m"      /* Blue */
+#define MAGENTA "\033[35m"      /* Magenta */
+#define CYAN    "\033[36m"      /* Cyan */
+#define WHITE   "\033[37m"      /* White */
+#define BOLDBLACK   "\033[1m\033[30m"      /* Bold Black */
+#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
+#define BOLDYELLOW  "\033[1m\033[33m"      /* Bold Yellow */
+#define BOLDBLUE    "\033[1m\033[34m"      /* Bold Blue */
+#define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
+#define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
+#define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
+#define BOLD_ON_RED "\033[1m\033[41m"      /* Bold Red Background*/
+
+
 enum LOG_LEVEL
 {
     FATAL = 1,
@@ -189,6 +209,9 @@ public:
 
     void be_thdo();
 
+    void set_max_mem(const uint64_t max_mem);
+    void set_max_filesize(const uint64_t max_filesize);
+
 private:
     cloog();
 
@@ -255,8 +278,9 @@ do \
 { \
 if (cloog::ins()->get_level() >= TRACE) \
 { \
-cloog::ins()->try_append("[TRACE]", "[%u]: " fmt "\n", \
-std::this_thread::get_id(), ##args); \
+cloog::ins()->try_append("[TRACE]", "[0x%x]: " fmt "\n", \
+std::this_thread::get_id(), ##args);    \
+printf(WHITE fmt RESET "\n", ##args);               \
 } \
 } while (0)
 
@@ -265,8 +289,9 @@ do \
 { \
 if (cloog::ins()->get_level() >= DEBUG) \
 { \
-cloog::ins()->try_append("[DEBUG]", "[%u]: " fmt "\n", \
+cloog::ins()->try_append("[DEBUG]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##args); \
+printf(CYAN fmt RESET "\n", ##args);            \
 } \
 } while (0)
 
@@ -275,8 +300,9 @@ do \
 { \
 if (cloog::ins()->get_level() >= INFO) \
 { \
-cloog::ins()->try_append("[INFO]", "[%u]: " fmt "\n", \
-std::this_thread::get_id(), ##args); \
+cloog::ins()->try_append("[INFO]", "[0x%x]: " fmt "\n", \
+std::this_thread::get_id(), ##args);   \
+printf(GREEN fmt RESET "\n", ##args);  \
 } \
 } while (0)
 
@@ -285,8 +311,9 @@ do \
 { \
 if (cloog::ins()->get_level() >= INFO) \
 { \
-cloog::ins()->try_append("[INFO]", "[%u]: " fmt "\n", \
-std::this_thread::get_id(), ##args); \
+cloog::ins()->try_append("[INFO]", "[0x%x]: " fmt "\n", \
+std::this_thread::get_id(), ##args);  \
+printf(GREEN fmt RESET "\n", ##args); \
 } \
 } while (0)
 
@@ -295,8 +322,9 @@ do \
 { \
 if (cloog::ins()->get_level() >= WARN) \
 { \
-cloog::ins()->try_append("[WARN]", "[%u]: " fmt "\n", \
-std::this_thread::get_id(), ##args); \
+cloog::ins()->try_append("[WARN]", "[0x%x]: " fmt "\n", \
+std::this_thread::get_id(), ##args);  \
+printf(BOLDYELLOW fmt RESET "\n", ##args); \
 } \
 } while (0)
 
@@ -305,16 +333,30 @@ do \
 { \
 if (cloog::ins()->get_level() >= ERROR) \
 { \
-cloog::ins()->try_append("[ERROR]", "[%u]: " fmt "\n", \
-std::this_thread::get_id(), ##args);            \
+cloog::ins()->try_append("[ERROR]", "[0x%x]: " fmt "\n", \
+std::this_thread::get_id(), ##args);        \
+printf(BOLDRED fmt RESET "\n", ##args);     \
 } \
 } while (0)
 
 #define LOG_FATAL(fmt, args...) \
 do \
 { \
-cloog::ins()->try_append("[FATAL]", "[%u]: " fmt "\n", \
-std::this_thread::get_id(), ##args); \
+cloog::ins()->try_append("[FATAL]", "[0x%x]: " fmt "\n", \
+std::this_thread::get_id(), ##args);                     \
+printf(BOLD_ON_RED  fmt RESET "\n", ##args);             \
 } while (0)
+
+#define LOG_MEMUSE(size) \
+do                       \
+{                        \
+  cloog::ins()->set_max_mem(size); \
+}while(0)                \
+
+#define LOG_FILESIZE(size) \
+do                       \
+{                        \
+  cloog::ins()->set_max_filesize(size); \
+}while(0)                \
 
 #endif //CLOOG_CLOOG_H
