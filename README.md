@@ -15,7 +15,7 @@ int main()
     LOG_INIT("path", "filename", INFO);
     for (size_t i = 0; i < 10; i++)
     {
-        LOG_FATAL("log_test_%d",i);
+        LOG_INFO("log_test_%d",i);
     }
     return 0;
 }
