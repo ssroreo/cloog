@@ -43,159 +43,17 @@ enum LOG_LEVEL
     TRACE,
 };
 
-struct utc_timer
-{
-    utc_timer()
-    {
-        auto tp = std::chrono::system_clock::now();
-        time_t now_sec = std::chrono::system_clock::to_time_t(tp);
-        //set _sys_acc_sec, _sys_acc_min
-        _sys_acc_sec = now_sec;
-        _sys_acc_min = _sys_acc_sec / 60;
-        //use _sys_acc_sec calc year, mon, day, hour, min, sec
-        struct tm cur_tm;
-        localtime_r(&now_sec, &cur_tm);
-        year = cur_tm.tm_year + 1900;
-        mon  = cur_tm.tm_mon + 1;
-        day  = cur_tm.tm_mday;
-        hour = cur_tm.tm_hour;
-        min  = cur_tm.tm_min;
-        sec  = cur_tm.tm_sec;
-        reset_utc_fmt();
-    }
+struct utc_timer;
 
-    uint64_t get_curr_time(int* p_msec = nullptr)
-    {
-        auto tp = std::chrono::system_clock::now();
-        time_t now_sec = std::chrono::system_clock::to_time_t(tp);
-        if (p_msec)
-            *p_msec = now_sec;
-        //if not in same seconds
-        if (now_sec != _sys_acc_sec)
-        {
-            sec = now_sec % 60;
-            _sys_acc_sec = now_sec;
-            //or if not in same minutes
-            if (_sys_acc_sec / 60 != _sys_acc_min)
-            {
-                //use _sys_acc_sec update year, mon, day, hour, min, sec
-                _sys_acc_min = _sys_acc_sec / 60;
-                struct tm cur_tm;
-                localtime_r(&now_sec, &cur_tm);
-                year = cur_tm.tm_year + 1900;
-                mon  = cur_tm.tm_mon + 1;
-                day  = cur_tm.tm_mday;
-                hour = cur_tm.tm_hour;
-                min  = cur_tm.tm_min;
-                //reformat utc format
-                reset_utc_fmt();
-            }
-            else
-            {
-                //reformat utc format only sec
-                reset_utc_fmt_sec();
-            }
-        }
-        return now_sec;
-    }
-
-    int year, mon, day, hour, min, sec;
-    char utc_fmt[20];
-
-private:
-    void reset_utc_fmt()
-    {
-        snprintf(utc_fmt, 20, "%d-%02d-%02d %02d:%02d:%02d", year, mon, day, hour, min, sec);
-    }
-
-    void reset_utc_fmt_sec()
-    {
-        snprintf(utc_fmt + 17, 3, "%02d", sec);
-    }
-
-    uint64_t _sys_acc_min;
-    uint64_t _sys_acc_sec;
-};
-
-class cell_buffer
-{
-public:
-    enum buffer_status
-    {
-        FREE,
-        FULL
-    };
-
-    explicit cell_buffer(uint32_t len):
-            _status(FREE),
-            _prev(nullptr),
-            _next(nullptr),
-            _total_len(len),
-            _used_len(0)
-    {
-        _data = new char[len];
-        if (!_data)
-        {
-            fprintf(stderr, "no space to allocate _data\n");
-            exit(1);
-        }
-    }
-
-    uint32_t avail_len() const { return _total_len - _used_len; }
-
-    bool empty() const { return _used_len == 0; }
-
-    void append(const char* log_line, uint32_t len)
-    {
-        if (avail_len() < len)
-            return ;
-        memcpy(_data + _used_len, log_line, len);
-        _used_len += len;
-    }
-
-    void clear()
-    {
-        _used_len = 0;
-        _status = FREE;
-    }
-
-    void persist(FILE* fp)
-    {
-        uint32_t wt_len = fwrite(_data, 1, _used_len, fp);
-        if (wt_len != _used_len)
-        {
-            fprintf(stderr, "write log to disk error, wt_len %u\n", wt_len);
-        }
-    }
-
-    buffer_status _status;
-
-    cell_buffer* _prev;
-    cell_buffer* _next;
-
-private:
-    cell_buffer(const cell_buffer&);
-    cell_buffer& operator=(const cell_buffer&);
-
-    uint32_t _total_len;
-    uint32_t _used_len;
-    char* _data;
-};
+class cell_buffer;
 
 class cloog
 {
 public:
     //for thread-safe singleton
-    static cloog* ins()
-    {
-        std::call_once(_once, cloog::init);
-        return _ins;
-    }
+    static cloog* ins();
 
-    static void init()
-    {
-        while (!_ins) _ins = new cloog();
-    }
+    static void init();
 
     void init_path(const char* log_dir, const char* prog_name, int level);
 
@@ -208,6 +66,7 @@ public:
     void be_thdo();
 
     void set_max_mem(const uint64_t max_mem);
+
     void set_max_filesize(const uint64_t max_filesize);
 
 private:
@@ -235,7 +94,7 @@ private:
     int _level;
     uint64_t _lst_lts;//last can't log error time(s) if value != 0, log error happened last time
 
-    utc_timer _tm;
+    utc_timer* _tm;
 
     static std::mutex _mutex;
     static std::mutex _cond_mutex;

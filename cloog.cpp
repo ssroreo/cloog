@@ -23,6 +23,145 @@ cloog* cloog::_ins = nullptr;
 std::once_flag cloog::_once;
 uint32_t cloog::_one_buff_len = 30*1024*1024;//30MB
 
+struct utc_timer
+{
+    utc_timer()
+    {
+        auto tp = std::chrono::system_clock::now();
+        time_t now_sec = std::chrono::system_clock::to_time_t(tp);
+        //set _sys_acc_sec, _sys_acc_min
+        _sys_acc_sec = now_sec;
+        _sys_acc_min = _sys_acc_sec / 60;
+        //use _sys_acc_sec calc year, mon, day, hour, min, sec
+        struct tm cur_tm;
+        localtime_r(&now_sec, &cur_tm);
+        year = cur_tm.tm_year + 1900;
+        mon  = cur_tm.tm_mon + 1;
+        day  = cur_tm.tm_mday;
+        hour = cur_tm.tm_hour;
+        min  = cur_tm.tm_min;
+        sec  = cur_tm.tm_sec;
+        reset_utc_fmt();
+    }
+
+    uint64_t get_curr_time(int* p_msec = nullptr)
+    {
+        auto tp = std::chrono::system_clock::now();
+        time_t now_sec = std::chrono::system_clock::to_time_t(tp);
+        if (p_msec)
+            *p_msec = now_sec;
+        //if not in same seconds
+        if (now_sec != _sys_acc_sec)
+        {
+            sec = now_sec % 60;
+            _sys_acc_sec = now_sec;
+            //or if not in same minutes
+            if (_sys_acc_sec / 60 != _sys_acc_min)
+            {
+                //use _sys_acc_sec update year, mon, day, hour, min, sec
+                _sys_acc_min = _sys_acc_sec / 60;
+                struct tm cur_tm;
+                localtime_r(&now_sec, &cur_tm);
+                year = cur_tm.tm_year + 1900;
+                mon  = cur_tm.tm_mon + 1;
+                day  = cur_tm.tm_mday;
+                hour = cur_tm.tm_hour;
+                min  = cur_tm.tm_min;
+                //reformat utc format
+                reset_utc_fmt();
+            }
+            else
+            {
+                //reformat utc format only sec
+                reset_utc_fmt_sec();
+            }
+        }
+        return now_sec;
+    }
+
+    int year, mon, day, hour, min, sec;
+    char utc_fmt[20];
+
+private:
+    void reset_utc_fmt()
+    {
+        snprintf(utc_fmt, 20, "%d-%02d-%02d %02d:%02d:%02d", year, mon, day, hour, min, sec);
+    }
+
+    void reset_utc_fmt_sec()
+    {
+        snprintf(utc_fmt + 17, 3, "%02d", sec);
+    }
+
+    uint64_t _sys_acc_min;
+    uint64_t _sys_acc_sec;
+};
+
+class cell_buffer
+{
+public:
+    enum buffer_status
+    {
+        FREE,
+        FULL
+    };
+
+    explicit cell_buffer(uint32_t len):
+            _status(FREE),
+            _prev(nullptr),
+            _next(nullptr),
+            _total_len(len),
+            _used_len(0)
+    {
+        _data = new char[len];
+        if (!_data)
+        {
+            fprintf(stderr, "no space to allocate _data\n");
+            exit(1);
+        }
+    }
+
+    uint32_t avail_len() const { return _total_len - _used_len; }
+
+    bool empty() const { return _used_len == 0; }
+
+    void append(const char* log_line, uint32_t len)
+    {
+        if (avail_len() < len)
+            return ;
+        memcpy(_data + _used_len, log_line, len);
+        _used_len += len;
+    }
+
+    void clear()
+    {
+        _used_len = 0;
+        _status = FREE;
+    }
+
+    void persist(FILE* fp)
+    {
+        uint32_t wt_len = fwrite(_data, 1, _used_len, fp);
+        if (wt_len != _used_len)
+        {
+            fprintf(stderr, "write log to disk error, wt_len %u\n", wt_len);
+        }
+    }
+
+    buffer_status _status;
+
+    cell_buffer* _prev;
+    cell_buffer* _next;
+
+private:
+    cell_buffer(const cell_buffer&);
+    cell_buffer& operator=(const cell_buffer&);
+
+    uint32_t _total_len;
+    uint32_t _used_len;
+    char* _data;
+};
+
 cloog::cloog():
         _buff_cnt(3),
         _curr_buf(nullptr),
@@ -32,7 +171,7 @@ cloog::cloog():
         _env_ok(false),
         _level(INFO),
         _lst_lts(0),
-        _tm()
+        _tm(new utc_timer)
 {
     //create double linked list
     cell_buffer* head = new cell_buffer(_one_buff_len);
@@ -62,6 +201,17 @@ cloog::cloog():
     _prst_buf = head;
 
     _pid = getpid();
+}
+
+cloog* cloog::ins()
+{
+    std::call_once(_once, cloog::init);
+    return _ins;
+}
+
+void cloog::init()
+{
+    while (!_ins) _ins = new cloog();
 }
 
 void cloog::init_path(const char* log_dir, const char* prog_name, int level)
@@ -114,7 +264,7 @@ void cloog::persist()
             }
         }
         //decision which file to write
-        int year = _tm.year, mon = _tm.mon, day = _tm.day;
+        int year = _tm->year, mon = _tm->mon, day = _tm->day;
         if (!decis_file(year, mon, day))
             continue;
         //write
@@ -131,13 +281,13 @@ void cloog::persist()
 void cloog::try_append(const char* lvl, const char* format, ...)
 {
     int ms;
-    uint64_t curr_sec = _tm.get_curr_time(&ms);
+    uint64_t curr_sec = _tm->get_curr_time(&ms);
     if (_lst_lts && curr_sec - _lst_lts < RELOG_THRESOLD)
         return ;
 
     ms %= 1000;
     char log_line[LOG_LEN_LIMIT];
-    int prev_len = snprintf(log_line, LOG_LEN_LIMIT, "%s[%s.%03d]", lvl, _tm.utc_fmt, ms);
+    int prev_len = snprintf(log_line, LOG_LEN_LIMIT, "%s[%s.%03d]", lvl, _tm->utc_fmt, ms);
 
     va_list arg_ptr;
     va_start(arg_ptr, format);
