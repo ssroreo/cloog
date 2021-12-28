@@ -5,6 +5,15 @@
 #ifndef CLOOG_CLOOG_H
 #define CLOOG_CLOOG_H
 
+#ifdef _MSC_VER
+#   ifndef _CRT_SECURE_NO_WARNINGS
+#       define _CRT_SECURE_NO_WARNINGS
+#   endif
+#   ifndef _CRT_NONSTDC_NO_WARNINGS
+#       define _CRT_NONSTDC_NO_WARNINGS
+#   endif
+#endif
+
 #include <cstdio>
 #include <cstring>
 #include <thread>
@@ -12,6 +21,10 @@
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
+
+#ifdef _WIN32
+#   define pid_t int
+#endif
 
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */
@@ -63,6 +76,10 @@ public:
 
     void try_append(const char* lvl, const char* format, ...);
 
+    void init_thread();
+
+    void exit_thread();
+
     void be_thdo();
 
     void set_max_mem(const uint64_t max_mem);
@@ -96,6 +113,9 @@ private:
 
     utc_timer* _tm;
 
+    std::thread _thread;
+    bool _active;
+
     static std::mutex _mutex;
     static std::mutex _cond_mutex;
     static std::condition_variable _cond;
@@ -125,83 +145,88 @@ cloog::_one_buff_len = mem_lmt; \
 do \
 { \
 cloog::ins()->init_path(log_dir, prog_name, level); \
-std::thread t(&cloog::be_thdo, cloog::ins()); \
-t.detach(); \
+cloog::ins()->init_thread();                        \
 } while (0)
 
+#define LOG_EXIT() \
+do                 \
+{                  \
+cloog::ins()->exit_thread();   \
+} while(0)         \
+
 //format: [LEVEL][yy-mm-dd h:m:s.ms][tid]file_name:line_no(func_name):content
-#define LOG_TRACE(fmt, args...) \
+#define LOG_TRACE(fmt, ...) \
 do \
 { \
 if (cloog::ins()->get_level() >= TRACE) \
 { \
 cloog::ins()->try_append("[TRACE]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args);    \
-printf(WHITE fmt RESET "\n", ##args);               \
+std::this_thread::get_id(), ##__VA_ARGS__);    \
+printf(WHITE fmt RESET "\n", ##__VA_ARGS__);               \
 } \
 } while (0)
 
-#define LOG_DEBUG(fmt, args...) \
+#define LOG_DEBUG(fmt, ...) \
 do \
 { \
 if (cloog::ins()->get_level() >= DEBUG) \
 { \
 cloog::ins()->try_append("[DEBUG]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args); \
-printf(CYAN fmt RESET "\n", ##args);            \
+std::this_thread::get_id(), ##__VA_ARGS__); \
+printf(CYAN fmt RESET "\n", ##__VA_ARGS__);            \
 } \
 } while (0)
 
-#define LOG_INFO(fmt, args...) \
+#define LOG_INFO(fmt, ...) \
 do \
 { \
 if (cloog::ins()->get_level() >= INFO) \
 { \
 cloog::ins()->try_append("[INFO]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args);   \
-printf(GREEN fmt RESET "\n", ##args);  \
+std::this_thread::get_id(), ##__VA_ARGS__);   \
+printf(GREEN fmt RESET "\n", ##__VA_ARGS__);  \
 } \
 } while (0)
 
-#define LOG_NORMAL(fmt, args...) \
+#define LOG_NORMAL(fmt, ...) \
 do \
 { \
 if (cloog::ins()->get_level() >= INFO) \
 { \
 cloog::ins()->try_append("[INFO]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args);  \
-printf(GREEN fmt RESET "\n", ##args); \
+std::this_thread::get_id(), ##__VA_ARGS__);  \
+printf(GREEN fmt RESET "\n", ##__VA_ARGS__); \
 } \
 } while (0)
 
-#define LOG_WARN(fmt, args...) \
+#define LOG_WARN(fmt, ...) \
 do \
 { \
 if (cloog::ins()->get_level() >= WARN) \
 { \
 cloog::ins()->try_append("[WARN]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args);  \
-printf(BOLDYELLOW fmt RESET "\n", ##args); \
+std::this_thread::get_id(), ##__VA_ARGS__);  \
+printf(BOLDYELLOW fmt RESET "\n", ##__VA_ARGS__); \
 } \
 } while (0)
 
-#define LOG_ERROR(fmt, args...) \
+#define LOG_ERROR(fmt, ...) \
 do \
 { \
 if (cloog::ins()->get_level() >= ERROR) \
 { \
 cloog::ins()->try_append("[ERROR]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args);        \
-printf(BOLDRED fmt RESET "\n", ##args);     \
+std::this_thread::get_id(), ##__VA_ARGS__);        \
+printf(BOLDRED fmt RESET "\n", ##__VA_ARGS__);     \
 } \
 } while (0)
 
-#define LOG_FATAL(fmt, args...) \
+#define LOG_FATAL(fmt, ...) \
 do \
 { \
 cloog::ins()->try_append("[FATAL]", "[0x%x]: " fmt "\n", \
-std::this_thread::get_id(), ##args);                     \
-printf(BOLD_ON_RED  fmt RESET "\n", ##args);             \
+std::this_thread::get_id(), ##__VA_ARGS__);                     \
+printf(BOLD_ON_RED  fmt RESET "\n", ##__VA_ARGS__);             \
 } while (0)
 
 #define LOG_MEMUSE(size) \

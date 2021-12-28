@@ -5,14 +5,30 @@
 #include "cloog.h"
 
 #include <errno.h>
-#include <unistd.h>//access
 #include <assert.h>//assert
 #include <stdarg.h>//va_list
-#include <sys/stat.h>//mkdir
+
+#ifdef _WIN32
+#   include <direct.h>
+#   include <io.h>
+#else
+#   include <unistd.h>
+#   include <sys/stat.h>
+#endif
+
+#ifdef _WIN32
+#   define ACCESS _access
+#   define MKDIR(a) _mkdir((a))
+#   define LOCALTIME(sec,tm) localtime_s((tm),(sec))
+#else
+#   define ACCESS access
+#   define MKDIR(a) mkdir((a),0755)
+#   define LOCALTIME(sec,tm) localtime_r((sec),(tm))
+#endif
 
 static uint64_t MEM_USE_LIMIT    = (3u * 1024 * 1024 * 1024);
 static uint64_t LOG_FILE_LIMIT   = (1u * 1024 * 1024 * 1024);
-static uint64_t LOG_LEN_LIMIT    = (4 * 1024);
+const static uint64_t LOG_LEN_LIMIT    = (4 * 1024);
 static uint64_t RELOG_THRESOLD   = 5;
 
 std::mutex cloog::_mutex;
@@ -34,7 +50,7 @@ struct utc_timer
         _sys_acc_min = _sys_acc_sec / 60;
         //use _sys_acc_sec calc year, mon, day, hour, min, sec
         struct tm cur_tm;
-        localtime_r(&now_sec, &cur_tm);
+        LOCALTIME(&now_sec, &cur_tm);
         year = cur_tm.tm_year + 1900;
         mon  = cur_tm.tm_mon + 1;
         day  = cur_tm.tm_mday;
@@ -61,7 +77,7 @@ struct utc_timer
                 //use _sys_acc_sec update year, mon, day, hour, min, sec
                 _sys_acc_min = _sys_acc_sec / 60;
                 struct tm cur_tm;
-                localtime_r(&now_sec, &cur_tm);
+                LOCALTIME(&now_sec, &cur_tm);
                 year = cur_tm.tm_year + 1900;
                 mon  = cur_tm.tm_mon + 1;
                 day  = cur_tm.tm_mday;
@@ -171,7 +187,8 @@ cloog::cloog():
         _env_ok(false),
         _level(INFO),
         _lst_lts(0),
-        _tm(new utc_timer)
+        _tm(new utc_timer),
+        _active(false)
 {
     //create double linked list
     cell_buffer* head = new cell_buffer(_one_buff_len);
@@ -222,9 +239,9 @@ void cloog::init_path(const char* log_dir, const char* prog_name, int level)
     //name format:  name_year-mon-day-t[tid].log.n
     strncpy(_prog_name, prog_name, 128);
 
-    mkdir(_log_dir, 0777);
+    MKDIR(_log_dir);
     //查看是否存在此目录、目录下是否允许创建文件
-    if (access(_log_dir, F_OK | W_OK) == -1)
+    if (ACCESS(_log_dir, 2) == -1)
     {
         fprintf(stderr, "logdir: %s error: %s\n", _log_dir, strerror(errno));
     }
@@ -241,7 +258,8 @@ void cloog::init_path(const char* log_dir, const char* prog_name, int level)
 
 void cloog::persist()
 {
-    while (true)
+    _active = true;
+    while (_active)
     {
         {
             //check if _prst_buf need to be persist
@@ -276,6 +294,8 @@ void cloog::persist()
             _prst_buf = _prst_buf->_next;
         }
     }
+    _active = false;
+    fflush(_fp);
 }
 
 void cloog::try_append(const char* lvl, const char* format, ...)
@@ -358,6 +378,17 @@ void cloog::try_append(const char* lvl, const char* format, ...)
     {
         _cond.notify_all();
     }
+}
+
+void cloog::init_thread()
+{
+    _thread = std::thread(&cloog::be_thdo, this);
+    _thread.detach();
+}
+
+void cloog::exit_thread()
+{
+    _active = false;
 }
 
 bool cloog::decis_file(int year, int mon, int day)
