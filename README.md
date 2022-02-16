@@ -4,7 +4,12 @@ Fast, thread safe C++ logging library.
 
 Building From Source
 === 
-`g++ -o libcloog.so cloog.cpp --shared -std=c++11`  
+Build static library:  
+`mkdir build && cd build && cmake .. && make`  
+  
+or build dynamic library:  
+`mkdir build && cd build && cmake -DCLOOG_BUILD_SHARED=ON .. && make`  
+
   
 Usage samples
 === 
@@ -12,11 +17,14 @@ Usage samples
 #include "cloog.h"
 int main()
 {
-    LOG_INIT("path", "filename", INFO);
-    for (size_t i = 0; i < 10; i++)
-    {
-        LOG_INFO("log_test_%d",i);
-    }
+    LOG_INIT(“/Users/oreo/log_path“, “log_filename”, TRACE);
+    LOG_FATAL("Fatal log");
+    LOG_ERROR("error log");
+    LOG_WARN("warn log");
+    LOG_DEBUG("debug log");
+    LOG_TRACE("trace log");
+    //LOG_EXIT() is optional (only mandatory if using Windows).
+    LOG_EXIT();
     return 0;
 }
 ```
