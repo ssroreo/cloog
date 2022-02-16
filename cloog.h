@@ -20,10 +20,21 @@
 #include <ctime>
 #include <chrono>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 
 #ifdef _WIN32
 #   define pid_t int
+#endif
+
+#if defined(_WIN32) && defined(CLOOG_SHARED_LIB)
+#ifdef cloog_EXPORTS
+#define CLOOG_API __declspec(dllexport)
+#else
+#define CLOOG_API __declspec(dllimport)
+#endif
+#else // !defined(_WIN32) || !defined(CLOOG_SHARED_LIB)
+#define CLOOG_API
 #endif
 
 #define RESET   "\033[0m"
@@ -60,7 +71,7 @@ struct utc_timer;
 
 class cell_buffer;
 
-class cloog
+class CLOOG_API cloog
 {
 public:
     //for thread-safe singleton
@@ -114,7 +125,7 @@ private:
     utc_timer* _tm;
 
     std::thread _thread;
-    bool _active;
+    std::atomic_bool _active;
 
     static std::mutex _mutex;
     static std::mutex _cond_mutex;

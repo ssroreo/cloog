@@ -294,8 +294,6 @@ void cloog::persist()
             _prst_buf = _prst_buf->_next;
         }
     }
-    _active = false;
-    fflush(_fp);
 }
 
 void cloog::try_append(const char* lvl, const char* format, ...)
@@ -389,6 +387,7 @@ void cloog::init_thread()
 void cloog::exit_thread()
 {
     _active = false;
+    fflush(_fp);
 }
 
 bool cloog::decis_file(int year, int mon, int day)
