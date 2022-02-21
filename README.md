@@ -17,6 +17,7 @@ Usage samples
 #include "cloog.h"
 int main()
 {
+    //set log path, log file name and log level
     LOG_INIT(“/Users/oreo/log_path“, “log_filename”, TRACE);
     LOG_FATAL("Fatal log");
     LOG_ERROR("error log");
