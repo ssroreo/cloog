@@ -173,7 +173,7 @@ if (cloog::ins()->get_level() >= TRACE) \
 { \
 cloog::ins()->try_append("[TRACE]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__);    \
-printf(WHITE fmt RESET "\n", ##__VA_ARGS__);               \
+printf(WHITE "[TRACE]" RESET fmt "\n", ##__VA_ARGS__);               \
 } \
 } while (0)
 
@@ -184,7 +184,7 @@ if (cloog::ins()->get_level() >= DEBUG) \
 { \
 cloog::ins()->try_append("[DEBUG]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__); \
-printf(CYAN fmt RESET "\n", ##__VA_ARGS__);            \
+printf(CYAN "[DEBUG]" RESET fmt "\n", ##__VA_ARGS__);            \
 } \
 } while (0)
 
@@ -195,7 +195,7 @@ if (cloog::ins()->get_level() >= INFO) \
 { \
 cloog::ins()->try_append("[INFO]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__);   \
-printf(GREEN fmt RESET "\n", ##__VA_ARGS__);  \
+printf(GREEN "[INFO]" RESET fmt "\n", ##__VA_ARGS__);  \
 } \
 } while (0)
 
@@ -206,7 +206,7 @@ if (cloog::ins()->get_level() >= INFO) \
 { \
 cloog::ins()->try_append("[INFO]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__);  \
-printf(GREEN fmt RESET "\n", ##__VA_ARGS__); \
+printf(GREEN "[INFO]" RESET fmt "\n", ##__VA_ARGS__); \
 } \
 } while (0)
 
@@ -217,7 +217,7 @@ if (cloog::ins()->get_level() >= WARN) \
 { \
 cloog::ins()->try_append("[WARN]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__);  \
-printf(BOLDYELLOW fmt RESET "\n", ##__VA_ARGS__); \
+printf(BOLDYELLOW "[WARN]" RESET fmt "\n", ##__VA_ARGS__); \
 } \
 } while (0)
 
@@ -228,7 +228,7 @@ if (cloog::ins()->get_level() >= ERROR) \
 { \
 cloog::ins()->try_append("[ERROR]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__);        \
-printf(BOLDRED fmt RESET "\n", ##__VA_ARGS__);     \
+printf(BOLDRED "[ERROR]" RESET fmt "\n", ##__VA_ARGS__);     \
 } \
 } while (0)
 
@@ -237,7 +237,7 @@ do \
 { \
 cloog::ins()->try_append("[FATAL]", "[0x%x]: " fmt "\n", \
 std::this_thread::get_id(), ##__VA_ARGS__);                     \
-printf(BOLD_ON_RED  fmt RESET "\n", ##__VA_ARGS__);             \
+printf(BOLD_ON_RED "[FATAL]" RESET fmt "\n", ##__VA_ARGS__);             \
 } while (0)
 
 #define LOG_MEMUSE(size) \
