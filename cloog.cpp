@@ -26,8 +26,8 @@
 #   define LOCALTIME(sec,tm) localtime_r((sec),(tm))
 #endif
 
-static uint64_t MEM_USE_LIMIT    = (3u * 1024 * 1024 * 1024);
-static uint64_t LOG_FILE_LIMIT   = (1u * 1024 * 1024 * 1024);
+static uint64_t MEM_USE_LIMIT    = (1u * 1024 * 1024 * 1024);
+static uint64_t LOG_FILE_LIMIT   = (200u * 1024 * 1024);
 const static uint64_t LOG_LEN_LIMIT    = (4 * 1024);
 static uint64_t RELOG_THRESOLD   = 5;
 
