@@ -396,7 +396,11 @@ bool cloog::decis_file(int year, int mon, int day)
     {
         if (_fp)
             fclose(_fp);
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+        _fp = fopen("NUL", "w");
+#elif defined(__linux__) || defined(__APPLE__)
         _fp = fopen("/dev/null", "w");
+#endif
         return _fp != nullptr;
     }
     if (!_fp)
